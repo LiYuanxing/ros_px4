@@ -1,0 +1,8 @@
+prefix=/home/lyx/ros_px4/devel
+
+Name: auto_ls
+Description: Description of auto_ls
+Version: 0.0.0
+Cflags: 
+Libs: -L/home/lyx/ros_px4/devel/lib 
+Requires: 
