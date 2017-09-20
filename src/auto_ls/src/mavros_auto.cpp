@@ -7,13 +7,21 @@
 
 #include "mavros_auto.h"
 
-mavros_auto::mavros_auto(void)
+extern mavros_auto  ros_d;
+
+void state_cb(const mavros_msgs::State::ConstPtr& msg);
+void pose_cb(const geometry_msgs::PoseStamped msg);
+void global_cb(const mavros_msgs::GlobalPositionTarget msg);
+
+
+
+
+mavros_auto::mavros_auto()
 {
 	// TODO Auto-generated constructor stub
-	ros::init(argc, argv, "auto_node");
 	state_sub = nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
 	position_sub = nh.subscribe<geometry_msgs::PoseStamped>("mavros/local_position/pose", 10, pose_cb);
-	global_position_sub = nh.subscribe<mavros_msgs::GlobalPositionTarget_>("/mavros/global_position/global", 10, global_cb);
+	global_position_sub = nh.subscribe<mavros_msgs::GlobalPositionTarget>("mavros/global_position/global", 10, global_cb);
 	local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
 
 	arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
@@ -21,28 +29,29 @@ mavros_auto::mavros_auto(void)
 	set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
 }
 
-//mavros_auto::~mavros_auto()
-//{
-//	// TODO Auto-generated destructor stub
-//}
 
-void mavros_auto::state_cb(const mavros_msgs::State::ConstPtr& msg)
+mavros_auto::~mavros_auto()
 {
-	current_state = *msg;
+	// TODO Auto-generated destructor stub
 }
 
-void mavros_auto::pose_cb(const geometry_msgs::PoseStamped msg)
+void state_cb(const mavros_msgs::State::ConstPtr& msg)
 {
-	now_pos.x = msg.pose.position.x;
-	now_pos.y = msg.pose.position.y;
-	now_pos.z = msg.pose.position.z;
+	ros_d.current_state = *msg;
 }
 
-void mavros_auto::global_cb(const mavros_msgs::GlobalPositionTarget msg)
+void pose_cb(const geometry_msgs::PoseStamped msg)
 {
-	now_global_pos.latitude = msg.latitude;
-	now_global_pos.longitude = msg.longitude;
-	now_global_pos.altitude = msg.longitude;
+	ros_d.now_pos.x = msg.pose.position.x;
+	ros_d.now_pos.y = msg.pose.position.y;
+	ros_d.now_pos.z = msg.pose.position.z;
+}
+
+void global_cb(const mavros_msgs::GlobalPositionTarget msg)
+{
+	ros_d.now_global_pos.latitude = msg.latitude;
+	ros_d.now_global_pos.longitude = msg.longitude;
+	ros_d.now_global_pos.altitude = msg.longitude;
 }
 
 bool mavros_auto::waypointPusher(mavros_msgs::WaypointPush &pusher, ros::ServiceClient client, ros::NodeHandle node, int frame, int command,
@@ -73,3 +82,38 @@ bool mavros_auto::waypointPusher(mavros_msgs::WaypointPush &pusher, ros::Service
 
 	return client.call(pusher);
 }
+bool mavros_auto::preparation(void)
+{
+	bool data;
+	if (ros_d.now_global_pos.latitude != 0 || ros_d.now_global_pos.longitude != 0 ||ros_d.current_state.connected==1)
+		data=1;
+	else
+		data=0;
+
+	return data;
+}
+
+bool mavros_auto::arm_copter(void)
+{
+	bool data;
+	mavros_msgs::SetMode offb_set_mode;
+	mavros_msgs::CommandBool arm_cmd;
+
+	if (current_state.mode != "guided" && set_mode_client.call(offb_set_mode) && offb_set_mode.response.success)
+	{
+		ROS_INFO("Offboard enabled");
+	}
+
+	if (!current_state.armed && arming_client.call(arm_cmd) && arm_cmd.response.success)
+	{
+		ROS_INFO("Vehicle armed");
+		data=1;
+	}else
+	{
+		data=0;
+	}
+	return data;
+
+}
+
+
