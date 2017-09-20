@@ -3,94 +3,30 @@
  * @brief offboard example node, written with mavros version 0.14.2, px4 flight
  * stack and tested in Gazebo SITL
  */
-#include <string>
-#include <vector>
-#include <ros/ros.h>
-
-#include <mavros_msgs/CommandBool.h>
-#include <mavros_msgs/CommandTOL.h>
-#include <mavros_msgs/SetMode.h>
-#include <mavros_msgs/State.h>
-#include <mavros_msgs/WaypointPush.h>
-
-#include <geometry_msgs/PoseStamped.h>
-#include <geometry_msgs/Point.h>
-
-#define FRAME 3
-
-mavros_msgs::State current_state;
-geometry_msgs::Point now_pos;
-
-void state_cb(const mavros_msgs::State::ConstPtr& msg)
-{
-	current_state = *msg;
-}
-
-void pose_cb(const geometry_msgs::PoseStamped msg)
-{
-	now_pos.x = msg.pose.position.x;
-	now_pos.y = msg.pose.position.y;
-	now_pos.z = msg.pose.position.z;
-}
-
-bool waypointPusher(mavros_msgs::WaypointPush &pusher, ros::ServiceClient client, ros::NodeHandle node, int frame, int command,
-		bool isCurrent, bool autoCont, float param1, float param2, float param3, float param4, float lat, float lon, float alt)
-{
-	client = node.serviceClient<mavros_msgs::WaypointPush>("mavros/mission/push");
-
-	mavros_msgs::Waypoint nextWaypoint;
-
-	nextWaypoint.frame = frame;
-	nextWaypoint.command = command;
-	nextWaypoint.is_current = isCurrent;
-	nextWaypoint.autocontinue = autoCont;
-	nextWaypoint.param1 = param1;
-	nextWaypoint.param2 = param2;
-	nextWaypoint.param3 = param3;
-	nextWaypoint.param4 = param4;
-	nextWaypoint.x_lat = lat;
-	nextWaypoint.y_long = lon;
-	nextWaypoint.z_alt = alt;
-
-	pusher.request.waypoints.push_back(nextWaypoint);
-
-	if (client.call(pusher))
-		ROS_INFO_STREAM("PUSHED WAYPOINT");
-	else
-		ROS_INFO_STREAM("PUSH FAILED");
-
-	return client.call(pusher);
-}
+#include "mavros_auto.h"
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "auto_node");
-	ros::NodeHandle nh;
 
-	ros::Subscriber state_sub = nh.subscribe<mavros_msgs::State>("mavros/state", 10, state_cb);
-	ros::Subscriber position_sub = nh.subscribe<geometry_msgs::PoseStamped>("mavros/local_position/pose", 10, pose_cb);
-
-	ros::Publisher local_pos_pub = nh.advertise<geometry_msgs::PoseStamped>("mavros/setpoint_position/local", 10);
-
-	ros::ServiceClient arming_client = nh.serviceClient<mavros_msgs::CommandBool>("mavros/cmd/arming");
-	ros::ServiceClient takeoff_client = nh.serviceClient<mavros_msgs::CommandTOL>("mavros/cmd/takeoff");
-	ros::ServiceClient set_mode_client = nh.serviceClient<mavros_msgs::SetMode>("mavros/set_mode");
-
-	ros::ServiceClient pushClient;
-	mavros_msgs::WaypointPush wayPusher;
-
-//	waypointPusher(pusher,client,node,frame,command,isCurrent,autoCont,param1,param2,param3,param4,lat,lon,alt)
-
-	waypointPusher(wayPusher, pushClient, nh, FRAME, 16, true, true, 0, 0, 0, 0, -35.3641624451, 149.166412354, 20);
-	waypointPusher(wayPusher, pushClient, nh, FRAME, 16, true, true, 0, 0, 0, 0, -35.3641634451, 149.166412354, 20);
-	waypointPusher(wayPusher, pushClient, nh, FRAME, 16, true, true, 0, 0, 0, 0, -35.3641644451, 149.166412354, 20);
-
-
-	//the setpoint publishing rate MUST be faster than 2Hz
+	mavros_auto ros_d;
 	ros::Rate rate(20.0);
 
+	while (ros::ok())
+	{
+		if(ros_d.now_global_pos.latitude!=0||ros_d.now_global_pos.longitude!=0)
+			break;
+		ros::spinOnce();
+		rate.sleep();
+	}
+	//ros_d.waypointPusher(pusher,client,node,frame,command,isCurrent,autoCont,param1,param2,param3,param4,lat,lon,alt)
+	ros_d.waypointPusher(ros_d.wayPusher, ros_d.pushClient, ros_d.nh,     0, 16, false, false, 0, 0, 0, 0, 1, 1, 584.070007324); //home
+	ros_d.waypointPusher(ros_d.wayPusher, ros_d.pushClient, ros_d.nh, FRAME, 22, false, false, 0, 0, 0, 0, 2, 2, 20); //take off
+	ros_d.waypointPusher(ros_d.wayPusher, ros_d.pushClient, ros_d.nh, FRAME, 16, false, false, 0, 0, 0, 0, 3, 3, 20); //way point
+	ros_d.waypointPusher(ros_d.wayPusher, ros_d.pushClient, ros_d.nh, FRAME, 21, false, false, 0, 0, 0, 0, 4, 4, 20); //land
+
+
 	// wait for FCU connection
-	while (ros::ok() && current_state.connected)
+	while (ros::ok() && ros_d.current_state.connected)
 	{
 		ros::spinOnce();
 		rate.sleep();
@@ -108,7 +44,7 @@ int main(int argc, char **argv)
 	mavros_msgs::CommandBool arm_cmd;
 	arm_cmd.request.value = true;
 
-	if (!current_state.armed && arming_client.call(arm_cmd) && arm_cmd.response.success)
+	if (!ros_d.current_state.armed && ros_d.arming_client.call(arm_cmd) && arm_cmd.response.success)
 	{
 		ros::spinOnce();
 		rate.sleep();
@@ -120,17 +56,17 @@ int main(int argc, char **argv)
 		tol.request.min_pitch = 10;
 		offb_set_mode.request.custom_mode = "guided";
 
-		if (current_state.mode != "guided" && set_mode_client.call(offb_set_mode) && offb_set_mode.response.success)
+		if (ros_d.current_state.mode != "guided" && ros_d.set_mode_client.call(offb_set_mode) && offb_set_mode.response.success)
 		{
 			ROS_INFO("guided enabled");
-			set_mode_client.call(offb_set_mode);
+			ros_d.set_mode_client.call(offb_set_mode);
 			ros::spinOnce();
 			rate.sleep();
 		}
 		//ROS_INFO("take off:%d", takeoff_client.call(tol));
 	}
 
-//	if (current_state.mode != "auto" && set_mode_client.call(offb_set_mode) && offb_set_mode.response.success)
+//	if (ros_d.current_state.mode != "auto" && ros_d.set_mode_client.call(offb_set_mode) && offb_set_mode.response.success)
 //	{
 //		ROS_INFO("auto enabled");
 //	}
