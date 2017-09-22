@@ -5,31 +5,44 @@
  */
 #include "mavros_auto.h"
 
-
-mavros_auto  ros_d;
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "auto_node");
+	mavros_auto ros_d;
 	ros::Rate rate(20.0);
 
-	while (ros::ok()&& !ros_d.preparation())
+	//wait connect and gps
+	while (ros::ok() && !ros_d.preparation())
 	{
 		ros::spinOnce();
 		rate.sleep();
 	}
-	//ros_d.waypointPusher(pusher,client,node,frame,command,isCurrent,autoCont,param1,param2,param3,param4,lat,lon,alt)
-	ros_d.waypointPusher(ros_d.wayPusher, ros_d.pushClient, ros_d.nh,     0, 16, false, false, 0, 0, 0, 0, 1, 1, 584.070007324); //home
-	ros_d.waypointPusher(ros_d.wayPusher, ros_d.pushClient, ros_d.nh, FRAME, 22, false, false, 0, 0, 0, 0, 2, 2, 20); //take off
-	ros_d.waypointPusher(ros_d.wayPusher, ros_d.pushClient, ros_d.nh, FRAME, 16, false, false, 0, 0, 0, 0, 3, 3, 20); //way point
-	ros_d.waypointPusher(ros_d.wayPusher, ros_d.pushClient, ros_d.nh, FRAME, 21, false, false, 0, 0, 0, 0, 4, 4, 20); //land
+
+	//ros_d.waypointPusher(frame,command,isCurrent,autoCont,param1,param2,param3,param4,lat,lon,alt)
+
+	ros_d.waypointPusher(LS_GLOBAL_REL_ALT, TAKE_OFF, false, false, 0, 0, 0, 0, ros_d.home_pos.latitude, ros_d.home_pos.longitude, 20);
+	ros_d.waypointPusher(LS_GLOBAL_REL_ALT, TAKE_OFF, false, false, 0, 0, 0, 0, ros_d.home_pos.latitude, ros_d.home_pos.longitude, 20);
+
+	double lat = ros_d.home_pos.latitude, lon = ros_d.home_pos.longitude, alt = 20;
+	for (int8_t i = 0; i < 20; i++)
+	{
+		int j,k;
+		random(3)>1?j=1:j=-1;
+		random(3)>1?k=1:k=-1;
+		lat += 0.00002 * random(60)*j;
+		lon += 0.00002 * random(60)*k;
+		ros_d.waypointPusher(LS_GLOBAL_REL_ALT, WAY_POINT, false, false, 0, 0, 0, 0, lat, lon, 20 + i);
+	}
+	ros_d.waypointPusher(LS_GLOBAL_REL_ALT, RTL, false, false, 0, 0, 0, 0, ros_d.home_pos.latitude, ros_d.home_pos.longitude, 20);
 
 	ros_d.arm_copter();
+	ros_d.set_auto();
 
 	ros::Time last_request = ros::Time::now();
 
 	while (ros::ok())
 	{
-		if (ros::Time::now() - last_request > ros::Duration(0.3))
+		if (ros::Time::now() - last_request > ros::Duration(1))
 		{
 			last_request = ros::Time::now();
 		}
