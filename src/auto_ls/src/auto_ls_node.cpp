@@ -9,6 +9,7 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "auto_node");
 	mavros_auto ros_d;
+	int test=0;
 	ros::Rate rate(100.0);
 
 	//wait connect and gps
@@ -17,29 +18,7 @@ int main(int argc, char **argv)
 		ros::spinOnce();
 		rate.sleep();
 	}
-
-	//ros_d.waypointPusher(frame,command,isCurrent,autoCont,param1,param2,param3,param4,lat,lon,alt)
-
-	ros_d.waypointPusher(LS_GLOBAL_REL_ALT, TAKE_OFF, false, false, 0, 0, 0, 0, ros_d.home_pos.latitude, ros_d.home_pos.longitude, 20);
-	ros_d.waypointPusher(LS_GLOBAL_REL_ALT, TAKE_OFF, false, false, 0, 0, 0, 0, ros_d.home_pos.latitude, ros_d.home_pos.longitude, 20);
-
-	double lat = ros_d.home_pos.latitude, lon = ros_d.home_pos.longitude, alt = 20;
-	for (int8_t i = 0; i < 5; i++)
-	{
-		int a,b,c,d;
-		a=random(2);
-		b=random(2);
-		c=random(60);
-		d=random(60);
-		a>0?a=1:a=-1;
-		b>0?b=1:b=-1;
-		lat += 0.00002 * c*a;
-		lon += 0.00002 * d*b;
-		ros_d.waypointPusher(LS_GLOBAL_REL_ALT, WAY_POINT, false, false, 0, 0, 0, 0, lat, lon, 20 + i);
-	}
-	ros_d.waypointPusher(LS_GLOBAL_REL_ALT, RTL, false, false, 0, 0, 0, 0, ros_d.home_pos.latitude, ros_d.home_pos.longitude, 20);
-	ros_d.waypointPusher(LS_GLOBAL_REL_ALT, RTL, false, false, 0, 0, 0, 0, ros_d.home_pos.latitude, ros_d.home_pos.longitude, 20);
-
+	ros_d.mission_random();
 	ros_d.arm_copter();
 	ros_d.set_auto();
 
@@ -48,12 +27,19 @@ int main(int argc, char **argv)
 
 	while (ros::ok())
 	{
-		if (ros::Time::now() - last_request1 > ros::Duration(0.05))//20Hz
+		if(ros_d.way.current==ros_d.way.max-1)
+		{
+			ros_d.mission_clear();
+			ros_d.mission_random();
+			ros_d.mission_set_current(2);
+			test++;
+			ROS_INFO("test:%d ",test);
+		}
+		if (ros::Time::now() - last_request1 > ros::Duration(0.05)) //20Hz
 		{
 			last_request1 = ros::Time::now();
-
 		}
-		if (ros::Time::now() - last_request2 > ros::Duration(0.05))//20Hz
+		if (ros::Time::now() - last_request2 > ros::Duration(0.05)) //20Hz
 		{
 			last_request2 = ros::Time::now();
 		}

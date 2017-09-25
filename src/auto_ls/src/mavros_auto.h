@@ -18,6 +18,9 @@
 #include <mavros_msgs/State.h>
 #include <mavros_msgs/WaypointList.h>
 #include <mavros_msgs/WaypointPush.h>
+#include <mavros_msgs/WaypointClear.h>
+#include <mavros_msgs/WaypointSetCurrent.h>
+#include <mavros_msgs/WaypointSetCurrentRequest.h>
 #include <mavros_msgs/GlobalPositionTarget.h>
 #include <mavros_msgs/HomePosition.h>
 
@@ -34,6 +37,7 @@
 
 
 #define WAY_POINT			16
+#define NAV_LOITER_UNLIM	17
 #define RTL					20
 #define LAND				21
 #define TAKE_OFF			22
@@ -92,7 +96,7 @@ public:
 	};
 
 	ros::NodeHandle nh;
-	ros::ServiceClient pushClient;
+
 
 	mavros_msgs::State current_state;
 	geometry_msgs::Point now_pos;
@@ -114,6 +118,8 @@ public:
 	ros::ServiceClient arming_client;
 	ros::ServiceClient takeoff_client;
 	ros::ServiceClient set_mode_client;
+	ros::ServiceClient set_current_client;
+	ros::ServiceClient waypointpush_client;
 
 
 	void state_cb(const mavros_msgs::State::ConstPtr& msg);
@@ -125,9 +131,12 @@ public:
 	lat_lon_alt_t cal_pos(double x,double y,double z);
 	bool waypointPusher(int frame, int command, bool isCurrent, bool autoCont, float param1, float param2, float param3, float param4,
 			float lat, float lon, float alt);
-	bool preparation();
-	bool arm_copter();
-	bool set_auto();
+	bool preparation(void);
+	bool arm_copter(void);
+	bool set_auto(void);
+	bool mission_clear();
+	bool mission_set_current(int num);
+	bool mission_random(void);
 
 };
 
