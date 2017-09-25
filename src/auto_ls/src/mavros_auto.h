@@ -79,18 +79,33 @@ public:
 	mavros_auto();
 	~mavros_auto();
 
+	struct lat_lon_alt_t
+	{
+		double lat;
+		double lon;
+		double alt;
+	};
+	struct waypoint_t
+	{
+		int current;
+		int max;
+	};
+
+	ros::NodeHandle nh;
+	ros::ServiceClient pushClient;
+
 	mavros_msgs::State current_state;
 	geometry_msgs::Point now_pos;
 	mavros_msgs::GlobalPositionTarget now_global_pos;
 	mavros_msgs::HomePosition home_pos;
 
-	ros::NodeHandle nh;
-
-	ros::ServiceClient pushClient;
 	mavros_msgs::WaypointPush wayPusher;
+	mavros_msgs::WaypointList curPoint;
+	waypoint_t	way;
 
 	ros::Subscriber state_sub;
 	ros::Subscriber position_sub;
+	ros::Subscriber cur_point_pub;
 	ros::Subscriber global_position_sub;
 	ros::Subscriber home_point_sub;
 
@@ -100,21 +115,16 @@ public:
 	ros::ServiceClient takeoff_client;
 	ros::ServiceClient set_mode_client;
 
-	struct lat_lon_alt_t
-	{
-		double lat;
-		double lon;
-		double alt;
-	};
+
 	void state_cb(const mavros_msgs::State::ConstPtr& msg);
 	void pose_cb(const geometry_msgs::PoseStamped msg);
 	void global_cb(const mavros_msgs::GlobalPositionTarget msg);
 	void home_cb(const mavros_msgs::HomePosition msg);
+	void cur_point_cb(const mavros_msgs::WaypointList msg);
 
 	lat_lon_alt_t cal_pos(double x,double y,double z);
 	bool waypointPusher(int frame, int command, bool isCurrent, bool autoCont, float param1, float param2, float param3, float param4,
 			float lat, float lon, float alt);
-
 	bool preparation();
 	bool arm_copter();
 	bool set_auto();

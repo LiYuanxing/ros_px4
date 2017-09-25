@@ -12,6 +12,7 @@ mavros_auto::mavros_auto()
 	// TODO Auto-generated constructor stub
 	this->state_sub = this->nh.subscribe<mavros_msgs::State>("mavros/state", 10, &mavros_auto::state_cb, this);
 	this->position_sub = this->nh.subscribe<geometry_msgs::PoseStamped>("mavros/local_position/pose", 10, &mavros_auto::pose_cb, this);
+	this->cur_point_pub =this->nh.subscribe<mavros_msgs::WaypointList>("mavros/mission/waypoints", 10,&mavros_auto::cur_point_cb,this);
 	this->global_position_sub = this->nh.subscribe<mavros_msgs::GlobalPositionTarget>("mavros/global_position/global", 10,
 			&mavros_auto::global_cb, this);
 	this->home_point_sub = this->nh.subscribe<mavros_msgs::HomePosition>("mavros/home_position/home", 10, &mavros_auto::home_cb, this);
@@ -52,6 +53,21 @@ void mavros_auto::home_cb(const mavros_msgs::HomePosition msg)
 	home_pos.latitude = msg.latitude;
 	home_pos.longitude = msg.longitude;
 	home_pos.altitude = msg.altitude;
+}
+void mavros_auto::cur_point_cb(const mavros_msgs::WaypointList msg)
+{
+
+	int length,i;//max 2506
+	length=curPoint.waypoints.size();
+	i=0;
+	curPoint.waypoints=msg.waypoints;
+	for(i;i<length;i++)
+	{
+		if(curPoint.waypoints[i].is_current==true)
+			break;
+	}
+	way.current=i;
+	way.max=curPoint.waypoints.size();
 }
 mavros_auto::lat_lon_alt_t mavros_auto::cal_pos(double x, double y, double z)
 {
