@@ -121,22 +121,22 @@ public:
 	ros::ServiceClient set_current_client;
 	ros::ServiceClient waypointpush_client;
 
-
 	void state_cb(const mavros_msgs::State::ConstPtr& msg);
-	void pose_cb(const geometry_msgs::PoseStamped msg);
-	void global_cb(const mavros_msgs::GlobalPositionTarget msg);
-	void home_cb(const mavros_msgs::HomePosition msg);
-	void cur_point_cb(const mavros_msgs::WaypointList msg);
+	void pose_cb(const geometry_msgs::PoseStamped::ConstPtr& msg);
+	void global_cb(const mavros_msgs::GlobalPositionTarget::ConstPtr& msg);
+	void home_cb(const mavros_msgs::HomePosition::ConstPtr& msg);
+	void cur_point_cb(const mavros_msgs::WaypointList::ConstPtr& msg);
 
-	lat_lon_alt_t cal_pos(double x,double y,double z);
 	bool waypointPusher(int frame, int command, bool isCurrent, bool autoCont, float param1, float param2, float param3, float param4,
 			float lat, float lon, float alt);
 	bool preparation(void);
 	bool arm_copter(void);
 	bool set_auto(void);
 	bool mission_clear();
-	bool mission_set_current(int num);
+	bool mission_home_takeoff(void);
 	bool mission_random(void);
+	bool mission_set_current(int num);
+
 
 };
 

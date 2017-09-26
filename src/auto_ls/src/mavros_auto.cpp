@@ -36,33 +36,33 @@ void mavros_auto::state_cb(const mavros_msgs::State::ConstPtr& msg)
 	current_state = *msg;
 }
 
-void mavros_auto::pose_cb(const geometry_msgs::PoseStamped msg)
+void mavros_auto::pose_cb(const geometry_msgs::PoseStamped::ConstPtr& msg)
 {
-	now_pos.x = msg.pose.position.x;
-	now_pos.y = msg.pose.position.y;
-	now_pos.z = msg.pose.position.z;
+	now_pos.x = msg->pose.position.x;
+	now_pos.y = msg->pose.position.y;
+	now_pos.z = msg->pose.position.z;
 }
 
-void mavros_auto::global_cb(const mavros_msgs::GlobalPositionTarget msg)
+void mavros_auto::global_cb(const mavros_msgs::GlobalPositionTarget::ConstPtr& msg)
 {
-	now_global_pos.latitude = msg.latitude;
-	now_global_pos.longitude = msg.longitude;
-	now_global_pos.altitude = msg.longitude;
+	now_global_pos.latitude =  msg->latitude;
+	now_global_pos.longitude = msg->longitude;
+	now_global_pos.altitude =  msg->longitude;
 
 }
-void mavros_auto::home_cb(const mavros_msgs::HomePosition msg)
+void mavros_auto::home_cb(const mavros_msgs::HomePosition::ConstPtr& msg)
 {
-	home_pos.latitude = msg.latitude;
-	home_pos.longitude = msg.longitude;
-	home_pos.altitude = msg.altitude;
+	home_pos.latitude =  msg->latitude;
+	home_pos.longitude = msg->longitude;
+	home_pos.altitude =  msg->altitude;
 }
-void mavros_auto::cur_point_cb(const mavros_msgs::WaypointList msg)
+void mavros_auto::cur_point_cb(const mavros_msgs::WaypointList::ConstPtr& msg)
 {
 
 	int length, i; //max 718
 	length = curPoint.waypoints.size();
 	i = 0;
-	curPoint.waypoints = msg.waypoints;
+	curPoint.waypoints = msg->waypoints;
 	for (i; i < length; i++)
 	{
 		if (curPoint.waypoints[i].is_current == true)
@@ -74,16 +74,12 @@ void mavros_auto::cur_point_cb(const mavros_msgs::WaypointList msg)
 
 	ROS_INFO("cur:%d max:%d ",way.current,way.max);
 }
-mavros_auto::lat_lon_alt_t mavros_auto::cal_pos(double x, double y, double z)
-{
-	lat_lon_alt_t pos;
 
-	return pos;
-}
 bool mavros_auto::waypointPusher(int frame, int command, bool isCurrent, bool autoCont, float param1, float param2, float param3,
 		float param4, float lat, float lon, float alt)
 {
 	mavros_msgs::Waypoint nextWaypoint;
+	bool result;
 
 	nextWaypoint.frame = frame;
 	nextWaypoint.command = command;
@@ -98,8 +94,8 @@ bool mavros_auto::waypointPusher(int frame, int command, bool isCurrent, bool au
 	nextWaypoint.z_alt = alt;
 
 	wayPusher.request.waypoints.push_back(nextWaypoint);
-
-	return waypointpush_client.call(wayPusher);
+	result =waypointpush_client.call(wayPusher);
+	return result;
 }
 bool mavros_auto::preparation(void)
 {
@@ -171,15 +167,19 @@ bool mavros_auto::mission_set_current(int num)
 
 	return set_current_client.call(current);
 }
+
+bool mavros_auto::mission_home_takeoff(void)
+{
+	waypointPusher(LS_GLOBAL_REL_ALT, TAKE_OFF, false, false, 0, 0, 0, 0, home_pos.latitude,home_pos.longitude, 20);
+	waypointPusher(LS_GLOBAL_REL_ALT, TAKE_OFF, false, false, 0, 0, 0, 0, home_pos.latitude,home_pos.longitude, 20);
+}
+
 bool mavros_auto::mission_random(void)
 {
 	//ros_d.waypointPusher(frame,command,isCurrent,autoCont,param1,param2,param3,param4,lat,lon,alt)
 	int8_t i = 0;
-	waypointPusher(LS_GLOBAL_REL_ALT, TAKE_OFF, false, false, 0, 0, 0, 0, home_pos.latitude,home_pos.longitude, 20);
-	waypointPusher(LS_GLOBAL_REL_ALT, TAKE_OFF, false, false, 0, 0, 0, 0, home_pos.latitude,home_pos.longitude, 20);
-
 	double lat = home_pos.latitude, lon = home_pos.longitude, alt = 20;
-	for (i = 0; i < 5; i++)
+	for (i = 0; i < 6; i++)
 	{
 		int a, b, c, d;
 		a = random(2);
@@ -192,7 +192,7 @@ bool mavros_auto::mission_random(void)
 		lon += 0.00002 * d * b;
 		waypointPusher(LS_GLOBAL_REL_ALT, WAY_POINT, false, false, 0, 0, 0, 0, lat, lon, 20 + i);
 	}
-	waypointPusher(LS_GLOBAL_REL_ALT, NAV_LOITER_UNLIM, false, false, 0, 0, 0, 0, lat, lon, 20 + i);
+	//waypointPusher(LS_GLOBAL_REL_ALT, NAV_LOITER_UNLIM, false, false, 0, 0, 0, 0, lat, lon, 20 + i);
 	//waypointPusher(LS_GLOBAL_REL_ALT, RTL, false, false, 0, 0, 0, 0, home_pos.latitude, home_pos.longitude, 20);
 	//waypointPusher(LS_GLOBAL_REL_ALT, RTL, false, false, 0, 0, 0, 0, home_pos.latitude, home_pos.longitude, 20);
 }

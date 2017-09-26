@@ -1,2 +1,2 @@
 - setup-file:
-    local-name: /home/lyx/Desktop/ros_px4/devel/setup.sh
+    local-name: /home/lyx/ros_px4/devel/setup.sh
