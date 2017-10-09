@@ -1,8 +1,0 @@
-prefix=/home/lyx/ros_px4/devel
-
-Name: guided_ls
-Description: Description of guided_ls
-Version: 0.0.0
-Cflags: 
-Libs: -L/home/lyx/ros_px4/devel/lib 
-Requires: 
