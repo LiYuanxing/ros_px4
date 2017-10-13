@@ -33,7 +33,7 @@ int main(int argc, char **argv)
 	{
 		if ((ros_d.way.max-1)==ros_d.way.current)
 		{
-			if (ros_d.way.max > 50)
+			if (ros_d.way.max > 700)
 			{
 				ros_d.mission_clear();
 				ros_d.mission_home_takeoff();

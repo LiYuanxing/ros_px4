@@ -37,6 +37,7 @@
 
 
 #define WAY_POINT			16
+#define SPLINE_POINT		82
 #define NAV_LOITER_UNLIM	17
 #define RTL					20
 #define LAND				21

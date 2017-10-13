@@ -72,7 +72,7 @@ void mavros_auto::cur_point_cb(const mavros_msgs::WaypointList::ConstPtr& msg)
 	way.current = i;
 	way.max=curPoint.waypoints.size();
 
-	ROS_INFO("cur:%d max:%d ",way.current,way.max);
+	//ROS_INFO("cur:%d max:%d ",way.current,way.max);
 }
 
 bool mavros_auto::waypointPusher(int frame, int command, bool isCurrent, bool autoCont, float param1, float param2, float param3,
@@ -178,9 +178,11 @@ bool mavros_auto::mission_random(void)
 {
 	//ros_d.waypointPusher(frame,command,isCurrent,autoCont,param1,param2,param3,param4,lat,lon,alt)
 	int8_t i = 0;
-	double lat = home_pos.latitude, lon = home_pos.longitude, alt = 20;
-	for (i = 0; i < 6; i++)
+	static double lat_h = home_pos.latitude, lon_h = home_pos.longitude, alt = 20;
+	double lat,lon;
+	for (i = 0; i < 12; i++)
 	{
+#if 0
 		int a, b, c, d;
 		a = random(2);
 		b = random(2);
@@ -188,12 +190,25 @@ bool mavros_auto::mission_random(void)
 		d = random(50);
 		a > 0 ? a = 1 : a = -1;
 		b > 0 ? b = 1 : b = -1;
-		lat += 0.00002 * c * a;
-		lon += 0.00002 * d * b;
+		lat = 0.00002 * c * a+lat_h;
+		lon = 0.00002 * d * b+lon_h;
 		waypointPusher(LS_GLOBAL_REL_ALT, WAY_POINT, false, false, 0, 0, 0, 0, lat, lon, 20 + i);
+#else
+		double lon_1m,lat_1m;
+		float alt;
+		static double count=0;
+		lat_1m=0.00000899;
+		lon_1m=0.00001141;
+
+		lat = 20*sin(9*count*0.0174533)*lat_1m +lat_h;
+		lon = count*lon_1m+lon_h;
+		alt=5*sin(36*count*0.0174533)+10;
+
+		waypointPusher(LS_GLOBAL_REL_ALT, WAY_POINT, false, false, 0, 0, 0, 0, lat, lon, alt);
+		count+=1;
+		ROS_INFO("lat:%f lon:%f count:%f",lat,lon,count);
+#endif
 	}
 	//waypointPusher(LS_GLOBAL_REL_ALT, NAV_LOITER_UNLIM, false, false, 0, 0, 0, 0, lat, lon, 20 + i);
-	//waypointPusher(LS_GLOBAL_REL_ALT, RTL, false, false, 0, 0, 0, 0, home_pos.latitude, home_pos.longitude, 20);
-	//waypointPusher(LS_GLOBAL_REL_ALT, RTL, false, false, 0, 0, 0, 0, home_pos.latitude, home_pos.longitude, 20);
 }
 
