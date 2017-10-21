@@ -52,9 +52,13 @@ void mavros_auto::global_cb(const mavros_msgs::GlobalPositionTarget::ConstPtr& m
 }
 void mavros_auto::home_cb(const mavros_msgs::HomePosition::ConstPtr& msg)
 {
-	home_pos.latitude =  msg->latitude;
-	home_pos.longitude = msg->longitude;
-	home_pos.altitude =  msg->altitude;
+//	home_pos.latitude =  msg->latitude;
+//	home_pos.longitude = msg->longitude;
+//	home_pos.altitude =  msg->altitude;
+
+	home_pos.latitude =  msg->position.x;
+	home_pos.longitude = msg->position.y;
+	home_pos.altitude =  msg->position.z;
 }
 void mavros_auto::cur_point_cb(const mavros_msgs::WaypointList::ConstPtr& msg)
 {
@@ -122,7 +126,7 @@ bool mavros_auto::arm_copter(void)
 
 	offb_set_mode.request.custom_mode = "guided";
 
-	if (current_state.mode != "guided" && set_mode_client.call(offb_set_mode) && offb_set_mode.response.success)
+	if (current_state.mode != "guided" && set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent)
 	{
 		ROS_INFO("guided enabled");
 	}
@@ -142,7 +146,7 @@ bool mavros_auto::set_auto(void)
 	bool data = 0;
 	mavros_msgs::SetMode offb_set_mode;
 	offb_set_mode.request.custom_mode = "auto";
-	if (current_state.mode != "auto" && set_mode_client.call(offb_set_mode) && offb_set_mode.response.success)
+	if (current_state.mode != "auto" && set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent)
 	{
 		ROS_INFO("auto enabled");
 		data = 1;

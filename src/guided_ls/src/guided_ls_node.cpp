@@ -131,7 +131,7 @@ int main(int argc, char **argv)
 	mavros_msgs::CommandBool arm_cmd;
 	arm_cmd.request.value = true;
 
-	if (current_state.mode != "guided" && set_mode_client.call(offb_set_mode) && offb_set_mode.response.success)
+	if (current_state.mode != "guided" && set_mode_client.call(offb_set_mode) && offb_set_mode.response.mode_sent)
 	{
 		ROS_INFO("Offboard enabled");
 	}

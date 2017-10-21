@@ -102,7 +102,7 @@ public:
 	mavros_msgs::State current_state;
 	geometry_msgs::Point now_pos;
 	mavros_msgs::GlobalPositionTarget now_global_pos;
-	mavros_msgs::HomePosition home_pos;
+	mavros_msgs::GlobalPositionTarget home_pos;
 
 	mavros_msgs::WaypointPush wayPusher;
 	mavros_msgs::WaypointList curPoint;
